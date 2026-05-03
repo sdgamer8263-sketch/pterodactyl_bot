@@ -787,40 +787,28 @@ sudo apt update && sudo apt upgrade -y
 # 2. Install Node.js (v18 recommended for discord.js v14)
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
-// Alternatively, if you need to install git, curl, or unzip:
+# Install other necessary tools
 sudo apt install -y git curl unzip sqlite3
 
 # 3. Clone the official GitHub repository
 git clone https://github.com/sdgamer8263-sketch/pterodactyl_bot.git
 cd pterodactyl_bot
 
-# 4. Create package.json and install.sh
-# You need to create both package.json and install.sh on your VPS.
-# - Copy the contents from the "package.json" tab and save it as package.json:
-#   nano package.json (Paste, then press Ctrl+X, Y, Enter)
-# - Copy the contents from the "install.sh" tab and save it as install.sh:
-#   nano install.sh (Paste, then press Ctrl+X, Y, Enter)
+# 4. Create package.json
+# You need to create package.json on your VPS since it wasn't provided.
+# - Copy the contents from the "package.json" tab
+# - Run:
+nano package.json
+# - Paste the contents, then press Ctrl+X, Y, Enter to save.
 
 # 5. Install all dependencies
 npm install
 
-# 6. Make the installation script executable
-chmod +x install.sh
-
-# 7. Run the installation script
-./install.sh
-
-# 8. (Alternative) Run the bot directly using PM2 (to keep it online 24/7)
+# 6. Run the bot using PM2 (to keep it online 24/7)
 sudo npm install -g pm2
 pm2 start index.js --name "etalemc-bot"
 pm2 save
 pm2 startup
-`;
-
-const installScriptCode = `#!/bin/bash
-# install.sh
-echo "Installing ETALEMC HOSTING bot..."
-echo "Please make sure you have cloned the repo."
 `;
 
 const eggJsonCode = `{
@@ -829,7 +817,7 @@ const eggJsonCode = `{
 }`;
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard' | 'installer' | 'egg' | 'package' | 'setup'>('management');
+  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard' | 'egg' | 'package' | 'setup'>('management');
   const [copied, setCopied] = useState(false);
 
   const activeCode = 
@@ -837,7 +825,6 @@ export default function App() {
     activeTab === 'economy' ? economyBotCode : 
     activeTab === 'features' ? featuresBotCode :
     activeTab === 'dashboard' ? dashboardServerCode :
-    activeTab === 'installer' ? installScriptCode :
     activeTab === 'egg' ? eggJsonCode :
     activeTab === 'package' ? packageJsonCode :
     setupInstructionsCode;
@@ -907,17 +894,6 @@ export default function App() {
               Web Dashboard
             </button>
             <button
-               onClick={() => setActiveTab('installer')}
-               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
-                 activeTab === 'installer'
-                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
-                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-               }`}
-            >
-              <Terminal size={16} />
-              Auto Installer
-            </button>
-            <button
                onClick={() => setActiveTab('egg')}
                className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
                  activeTab === 'egg'
@@ -958,7 +934,6 @@ export default function App() {
                 activeTab === 'economy' ? 'ETALEMC_Economy.ts' : 
                 activeTab === 'features' ? 'ETALEMC_Features.ts' :
                 activeTab === 'dashboard' ? 'server.ts' :
-                activeTab === 'installer' ? 'install.sh' :
                 activeTab === 'egg' ? 'egg.json' :
                 activeTab === 'package' ? 'package.json' :
                 'setup_commands.sh'}
