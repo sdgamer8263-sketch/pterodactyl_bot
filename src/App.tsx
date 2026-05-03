@@ -1,4 +1,4 @@
-import { Copy, Code2, Coins } from 'lucide-react';
+import { Copy, Code2, Coins, Bot } from 'lucide-react';
 import React, { useState } from 'react';
 
 const managementBotCode = `import {
@@ -483,11 +483,267 @@ client.on('messageCreate', async (message: Message) => {
 client.login(DISCORD_TOKEN);
 `;
 
+const featuresBotCode = `import {
+  Client,
+  GatewayIntentBits,
+  Message,
+  EmbedBuilder,
+  TextChannel,
+} from 'discord.js';
+import { GoogleGenAI } from '@google/genai';
+
+// ==========================================
+// CONFIGURATION
+// ==========================================
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN || 'YOUR_DISCORD_TOKEN';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'YOUR_GEMINI_API_KEY';
+const AI_CHANNEL_ID = process.env.AI_CHANNEL_ID || '123456789012345678';
+const REVIEW_LOG_CHANNEL_ID = process.env.REVIEW_LOG_CHANNEL_ID || '123456789012345678';
+const PREFIX = '!';
+
+let aiChatEnabled = true;
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
+
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+client.once('ready', () => {
+  console.log(\`Features module active as \${client.user?.tag}\`);
+});
+
+client.on('messageCreate', async (message: Message) => {
+  if (message.author.bot) return;
+
+  // ==========================================
+  // 1. AI CHAT TOGGLE (Admin Only)
+  // ==========================================
+  if (message.content.startsWith(\`\${PREFIX}toggleai\`)) {
+    if (!message.member?.permissions.has('Administrator')) {
+      return message.reply('⛔ You do not have permission to use this command.');
+    }
+    aiChatEnabled = !aiChatEnabled;
+    return message.reply(\`🤖 AI Chat is now **\${aiChatEnabled ? 'ON' : 'OFF'}**.\`);
+  }
+
+  // ==========================================
+  // 2. AI CHAT RESPONSE
+  // ==========================================
+  if (
+    message.channelId === AI_CHANNEL_ID &&
+    aiChatEnabled &&
+    !message.content.startsWith(PREFIX)
+  ) {
+    await message.channel.sendTyping();
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: message.content,
+        config: {
+          systemInstruction: 'You are a helpful, friendly assistant for ETALEMC HOSTING. Keep responses concise.',
+        },
+      });
+      const replyText = response.text || "I'm not sure what to say.";
+      return message.reply(replyText);
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      return message.reply('⚠️ Sorry, my AI brain encountered an error.');
+    }
+  }
+
+  // ==========================================
+  // 3. REVIEW SYSTEM
+  // ==========================================
+  if (message.content.startsWith(\`\${PREFIX}review \`)) {
+    const reviewText = message.content.slice(\`\${PREFIX}review\`.length).trim();
+
+    if (!reviewText) {
+      return message.reply(\`Usage: \\\`\${PREFIX}review <your message>\\\`\`);
+    }
+
+    const reviewChannel = client.channels.cache.get(REVIEW_LOG_CHANNEL_ID) as TextChannel;
+    if (!reviewChannel) {
+      return message.reply('⚠️ The review log channel is not configured correctly.');
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor('#fbbf24') // Amber/Gold color for reviews
+      .setTitle('🌟 New Customer Review')
+      .setAuthor({
+        name: message.author.tag,
+        iconURL: message.author.displayAvatarURL() || undefined,
+      })
+      .setDescription(reviewText)
+      .setTimestamp()
+      .setFooter({ text: 'ETALEMC HOSTING' });
+
+    try {
+      await reviewChannel.send({ embeds: [embed] });
+      return message.reply('✅ Thank you for your review! It has been posted successfully.');
+    } catch (error) {
+      console.error('Failed to send review:', error);
+      return message.reply('⚠️ Failed to post the review. Check bot channel permissions.');
+    }
+  }
+});
+
+client.login(DISCORD_TOKEN);
+`;
+
+const dashboardServerCode = `import express from 'express';
+import axios from 'axios';
+
+// ==========================================
+// CONFIGURATION
+// ==========================================
+const PORT = process.env.PORT || 3000;
+const PTERO_URL = process.env.PTERO_URL || 'https://panel.yourdomain.com';
+const APP_API_KEY = process.env.PTERO_APP_KEY || 'ptla_...';
+
+const pteroApp = axios.create({
+  baseURL: \`\${PTERO_URL}/api/application\`,
+  headers: {
+    Authorization: \`Bearer \${APP_API_KEY}\`,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+});
+
+const app = express();
+
+// ==========================================
+// HTML TEMPLATE
+// ==========================================
+const htmlTemplate = (nodesData: any) => \`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETALEMC HOSTING - Node Status</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .status-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-10 pb-6 border-b border-slate-700">
+            <div>
+                <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 gap-2 flex items-center">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    ETALEMC HOSTING
+                </h1>
+                <p class="text-slate-400 mt-1">Real-time infrastructure status</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex items-center gap-3">
+                <span class="flex h-3 w-3 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span class="text-emerald-400 font-medium">All Systems Operational</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            \${nodesData.map((node: any) => {
+                const attrs = node.attributes;
+                const memPercent = Math.round((attrs.allocated_resources.memory / attrs.memory) * 100);
+                const diskPercent = Math.round((attrs.allocated_resources.disk / attrs.disk) * 100);
+                return \`
+                <div class="glass-panel rounded-xl p-6 shadow-lg hover:shadow-indigo-500/10 transition-all duration-300">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path></svg>
+                                \${attrs.name}
+                            </h2>
+                            <p class="text-sm text-slate-400 mt-1">\${attrs.fqdn}</p>
+                        </div>
+                        <div class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 status-pulse"></span>
+                            ONLINE
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4 mt-6">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-300">Memory Usage</span>
+                                <span class="text-slate-100 font-medium">\${attrs.allocated_resources.memory} / \${attrs.memory} MB</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="bg-indigo-500 h-2 rounded-full" style="width: \${memPercent}%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-300">Disk Usage</span>
+                                <span class="text-slate-100 font-medium">\${attrs.allocated_resources.disk} / \${attrs.disk} MB</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: \${diskPercent}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                \`;
+            }).join('')}
+        </div>
+        
+        <footer class="mt-12 text-center text-slate-500 text-sm pb-8">
+            <p>&copy; \${new Date().getFullYear()} ETALEMC HOSTING. Automatic page refresh every 60 seconds.</p>
+        </footer>
+    </div>
+    <script>
+        setTimeout(() => window.location.reload(), 60000); // Auto-refresh every 60s
+    </script>
+</body>
+</html>
+\`;
+
+// ==========================================
+// ROUTES
+// ==========================================
+app.get('/', async (req, res) => {
+  try {
+    const response = await pteroApp.get('/nodes?include=allocations,servers');
+    const nodesData = response.data.data;
+    
+    res.send(htmlTemplate(nodesData));
+  } catch (error) {
+    console.error('Failed to fetch nodes:', error);
+    res.status(500).send(\`
+      <div style="color: white; background: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif;">
+          <h1>500 - Internal Server Error (Pterodactyl API Unreachable)</h1>
+      </div>
+    \`);
+  }
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(\`Dashboard Server running on port \${PORT}\`);
+});
+`;
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'management' | 'economy'>('management');
+  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard'>('management');
   const [copied, setCopied] = useState(false);
 
-  const activeCode = activeTab === 'management' ? managementBotCode : economyBotCode;
+  const activeCode = 
+    activeTab === 'management' ? managementBotCode : 
+    activeTab === 'economy' ? economyBotCode : 
+    activeTab === 'features' ? featuresBotCode :
+    dashboardServerCode;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(activeCode);
@@ -531,11 +787,36 @@ export default function App() {
               <Coins size={18} />
               Economy / Mini-games
             </button>
+            <button
+               onClick={() => setActiveTab('features')}
+               className={`flex flex-1 items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors ${
+                 activeTab === 'features'
+                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+               }`}
+            >
+              <Bot size={18} />
+              AI & Features
+            </button>
+            <button
+               onClick={() => setActiveTab('dashboard')}
+               className={`flex flex-1 items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors ${
+                 activeTab === 'dashboard'
+                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+               }`}
+            >
+              <Copy size={18} />
+              Web Dashboard
+            </button>
           </div>
 
           <div className="bg-gray-100 flex justify-between items-center px-4 py-3 border-b border-gray-200">
              <span className="font-mono text-sm text-gray-600 font-semibold">
-               {activeTab === 'management' ? 'ETALEMC_Management.ts' : 'ETALEMC_Economy.ts'}
+               {activeTab === 'management' ? 'ETALEMC_Management.ts' : 
+                activeTab === 'economy' ? 'ETALEMC_Economy.ts' : 
+                activeTab === 'features' ? 'ETALEMC_Features.ts' :
+                'server.ts'}
              </span>
              <button
                onClick={copyToClipboard}
@@ -556,9 +837,11 @@ export default function App() {
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold">Next Steps & Install</h2>
           <ul className="list-disc list-inside text-gray-700 space-y-2">
-            <li>Ensure you have <code>discord.js</code>, <code>axios</code>, <code>sqlite3</code>, and <code>sqlite</code> installed.</li>
-            <li>In your terminal: <code>npm install discord.js axios sqlite3 sqlite</code></li>
+            <li>Ensure you have <code>discord.js</code>, <code>axios</code>, <code>sqlite3</code>, <code>sqlite</code>, <code>@google/genai</code>, and <code>express</code> installed.</li>
+            <li>In your terminal: <code>npm install discord.js axios sqlite3 sqlite @google/genai express</code></li>
             <li>For the Economy module, the database automatically initializes as <code>economy.db</code> in the root folder of the workspace.</li>
+            <li>For the Features module, ensure you supply a valid <strong>GEMINI_API_KEY</strong>, <strong>AI_CHANNEL_ID</strong>, and <strong>REVIEW_LOG_CHANNEL_ID</strong>.</li>
+            <li>For the Dashboard Web Server, save the code as <code>server.ts</code> and execute with <code>npx tsx server.ts</code>. Ensure you open the specified PORT.</li>
           </ul>
         </section>
       </div>
