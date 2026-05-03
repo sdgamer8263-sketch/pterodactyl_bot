@@ -794,8 +794,12 @@ sudo apt install -y git curl unzip sqlite3
 git clone https://github.com/sdgamer8263-sketch/pterodactyl_bot.git
 cd pterodactyl_bot
 
-# 4. (Optional) Create your package.json if it isn't in the repo
-# You can copy the code from the 'package.json' tab and save it as package.json
+# 4. Create package.json and install.sh
+# You need to create both package.json and install.sh on your VPS.
+# - Copy the contents from the "package.json" tab and save it as package.json:
+#   nano package.json (Paste, then press Ctrl+X, Y, Enter)
+# - Copy the contents from the "install.sh" tab and save it as install.sh:
+#   nano install.sh (Paste, then press Ctrl+X, Y, Enter)
 
 # 5. Install all dependencies
 npm install
