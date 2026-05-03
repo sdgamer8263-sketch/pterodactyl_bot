@@ -1,4 +1,4 @@
-import { Copy, Code2, Coins, Bot, Terminal, Server } from 'lucide-react';
+import { Copy, Code2, Coins, Bot, Terminal, Server, Package, List } from 'lucide-react';
 import React, { useState } from 'react';
 
 const managementBotCode = `import {
@@ -14,6 +14,7 @@ const managementBotCode = `import {
   TextChannel,
   Interaction,
   CacheType,
+  Message,
 } from 'discord.js';
 import axios from 'axios';
 
@@ -101,25 +102,28 @@ client.once('ready', () => {
 });
 
 // ==========================================
-// DISCORD INTERACTIONS
+// DISCORD INTERACTIONS & COMMANDS
 // ==========================================
-client.on('interactionCreate', async (interaction: Interaction<CacheType>) => {
-  // 1. COMMAND: Show control panel dropdown
-  if (interaction.isChatInputCommand() && interaction.commandName === 'panel') {
-    await interaction.deferReply({ ephemeral: true });
+client.on('messageCreate', async (message: Message) => {
+  if (message.author.bot || !message.content.startsWith('!')) return;
+
+  const args = message.content.slice(1).trim().split(/ +/);
+  const command = args.shift()?.toLowerCase();
+
+  // 1. COMMAND: !panel
+  if (command === 'panel') {
     try {
       // Get user servers from Client API
       const res = await pteroClient.get('/');
       const servers = res.data.data;
 
       if (servers.length === 0) {
-        return interaction.editReply('You do not have any servers assigned to this account.');
+        return message.reply('You do not have any servers assigned to this account.');
       }
 
       const options = servers.slice(0, 25).map((srv: any) => ({
         label: srv.attributes.name.substring(0, 50),
         description: \`Memory: \${srv.attributes.limits.memory}MB | CPU: \${srv.attributes.limits.cpu}%\`,
-        // We pack BOTH identifier (client API) and internal_id (application API) inside value
         value: \`\${srv.attributes.identifier}_\${srv.attributes.internal_id}\`,
       }));
 
@@ -130,17 +134,18 @@ client.on('interactionCreate', async (interaction: Interaction<CacheType>) => {
 
       const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
 
-      await interaction.editReply({
+      await message.reply({
         content: '**ETALEMC HOSTING**\\nPlease select your server below:',
         components: [row],
       });
     } catch (error) {
       console.error(error);
-      await interaction.editReply('Failed to fetch your servers. Check API credentials.');
+      await message.reply('Failed to fetch your servers. Check API credentials.');
     }
-    return;
   }
+});
 
+client.on('interactionCreate', async (interaction: Interaction<CacheType>) => {
   // 2. SELECT MENU: Render server management control buttons
   if (interaction.isStringSelectMenu() && interaction.customId === 'select_server_dropdown') {
     const [identifier, internalId] = interaction.values[0].split('_');
@@ -557,6 +562,25 @@ client.on('messageCreate', async (message: Message) => {
   }
 
   // ==========================================
+  // HELP COMMAND
+  // ==========================================
+  if (message.content.trim() === \`\${PREFIX}help\`) {
+    const embed = new EmbedBuilder()
+      .setColor('#5865F2')
+      .setTitle('📚 ETALEMC HOSTING - Commands Help')
+      .setDescription('Here are all the available commands for the bot:')
+      .addFields(
+        { name: '🛠️ Management', value: '\`!panel\` - Opens the server management panel', inline: false },
+        { name: '🪙 Economy', value: '\`!daily\` - Collect daily reward\\n\`!work\` - Work for some coins\\n\`!bal\` / \`!balance\` - Check your balance\\n\`!deposit <amount>\` - Deposit coins into bank\\n\`!withdraw <amount>\` - Withdraw coins from bank\\n\`!rob @user\` - Steal coins from another user\\n\`!cointoss <head|tail> <bet>\` - Bet coins on a coin toss\\n\`!set-coin @user <amount>\` - (Admin) Set a user\\'s wallet balance', inline: false },
+        { name: '✨ Features', value: '\`!help\` - Shows this help menu\\n\`!review <message>\` - Post a customer review\\n\`!toggleai\` - (Admin) Turn AI features on/off', inline: false }
+      )
+      .setFooter({ text: 'Prefix is ! for all commands' })
+      .setTimestamp();
+      
+    return message.reply({ embeds: [embed] });
+  }
+
+  // ==========================================
   // 3. REVIEW SYSTEM
   // ==========================================
   if (message.content.startsWith(\`\${PREFIX}review \`)) {
@@ -735,8 +759,73 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 `;
 
+const packageJsonCode = `{
+  "name": "etalemc-hosting-bot",
+  "version": "1.0.0",
+  "description": "ETALEMC HOSTING Bot & Dashboard",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "axios": "^1.6.5",
+    "@google/genai": "^0.1.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "express": "^4.18.2",
+    "dotenv": "^16.4.1"
+  }
+}`;
+
+const setupInstructionsCode = `# Step-by-Step Installation Guide for ETALEMC HOSTING Bot on VPS
+
+# 1. Update your system packages
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install Node.js (v18 recommended for discord.js v14)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+// Alternatively, if you need to install git, curl, or unzip:
+sudo apt install -y git curl unzip sqlite3
+
+# 3. Clone the official GitHub repository
+git clone https://github.com/sdgamer8263-sketch/pterodactyl_bot.git
+cd pterodactyl_bot
+
+# 4. (Optional) Create your package.json if it isn't in the repo
+# You can copy the code from the 'package.json' tab and save it as package.json
+
+# 5. Install all dependencies
+npm install
+
+# 6. Make the installation script executable
+chmod +x install.sh
+
+# 7. Run the installation script
+./install.sh
+
+# 8. (Alternative) Run the bot directly using PM2 (to keep it online 24/7)
+sudo npm install -g pm2
+pm2 start index.js --name "etalemc-bot"
+pm2 save
+pm2 startup
+`;
+
+const installScriptCode = `#!/bin/bash
+# install.sh
+echo "Installing ETALEMC HOSTING bot..."
+echo "Please make sure you have cloned the repo."
+`;
+
+const eggJsonCode = `{
+  "name": "Pterodactyl Egg",
+  "description": "Custom egg for the bot"
+}`;
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard' | 'installer' | 'egg'>('management');
+  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard' | 'installer' | 'egg' | 'package' | 'setup'>('management');
   const [copied, setCopied] = useState(false);
 
   const activeCode = 
@@ -745,7 +834,9 @@ export default function App() {
     activeTab === 'features' ? featuresBotCode :
     activeTab === 'dashboard' ? dashboardServerCode :
     activeTab === 'installer' ? installScriptCode :
-    eggJsonCode;
+    activeTab === 'egg' ? eggJsonCode :
+    activeTab === 'package' ? packageJsonCode :
+    setupInstructionsCode;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(activeCode);
@@ -833,6 +924,28 @@ export default function App() {
               <Server size={16} />
               Ptero Egg
             </button>
+            <button
+               onClick={() => setActiveTab('package')}
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
+                 activeTab === 'package'
+                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+               }`}
+            >
+              <Package size={16} />
+              package.json
+            </button>
+            <button
+               onClick={() => setActiveTab('setup')}
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
+                 activeTab === 'setup'
+                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+               }`}
+            >
+              <List size={16} />
+              Setup Info
+            </button>
           </div>
 
           <div className="bg-gray-100 flex justify-between items-center px-4 py-3 border-b border-gray-200">
@@ -842,7 +955,9 @@ export default function App() {
                 activeTab === 'features' ? 'ETALEMC_Features.ts' :
                 activeTab === 'dashboard' ? 'server.ts' :
                 activeTab === 'installer' ? 'install.sh' :
-                'egg.json'}
+                activeTab === 'egg' ? 'egg.json' :
+                activeTab === 'package' ? 'package.json' :
+                'setup_commands.sh'}
              </span>
              <button
                onClick={copyToClipboard}
