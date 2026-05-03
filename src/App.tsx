@@ -1,4 +1,4 @@
-import { Copy, Code2, Coins, Bot } from 'lucide-react';
+import { Copy, Code2, Coins, Bot, Terminal, Server } from 'lucide-react';
 import React, { useState } from 'react';
 
 const managementBotCode = `import {
@@ -736,14 +736,16 @@ app.listen(PORT, '0.0.0.0', () => {
 `;
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard'>('management');
+  const [activeTab, setActiveTab] = useState<'management' | 'economy' | 'features' | 'dashboard' | 'installer' | 'egg'>('management');
   const [copied, setCopied] = useState(false);
 
   const activeCode = 
     activeTab === 'management' ? managementBotCode : 
     activeTab === 'economy' ? economyBotCode : 
     activeTab === 'features' ? featuresBotCode :
-    dashboardServerCode;
+    activeTab === 'dashboard' ? dashboardServerCode :
+    activeTab === 'installer' ? installScriptCode :
+    eggJsonCode;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(activeCode);
@@ -753,61 +755,83 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 py-12 px-6">
-      <div className="max-w-4xl mx-auto flex flex-col gap-8">
+      <div className="max-w-6xl mx-auto flex flex-col gap-8">
         <header className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-indigo-900">ETALEMC HOSTING Bot</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-indigo-900">ETALEMC HOSTING System Config</h1>
           <p className="text-lg text-gray-600">
-            This workspace contains the discord.js v14 code generated for your bot structure.
-            Toggle between the tabs to view the <strong>Management</strong> and <strong>Economy</strong> code modules.
+            This workspace contains all generated code and configurations for your platform.
+            Toggle panels to access the <strong>Bot Modules</strong>, <strong>Dashboard Server</strong>, <strong>Auto-Installer</strong>, and <strong>Pterodactyl Egg</strong>.
           </p>
         </header>
 
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
           {/* Navigation Tabs */}
-          <div className="flex border-b border-gray-200">
+          <div className="flex flex-wrap border-b border-gray-200 bg-white">
             <button
               onClick={() => setActiveTab('management')}
-              className={`flex flex-1 items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors ${
+              className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
                 activeTab === 'management'
                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Code2 size={18} />
-              Management API Code
+              <Code2 size={16} />
+              Management
             </button>
             <button
                onClick={() => setActiveTab('economy')}
-               className={`flex flex-1 items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors ${
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
                  activeTab === 'economy'
                    ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                }`}
             >
-              <Coins size={18} />
-              Economy / Mini-games
+              <Coins size={16} />
+              Economy
             </button>
             <button
                onClick={() => setActiveTab('features')}
-               className={`flex flex-1 items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors ${
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
                  activeTab === 'features'
                    ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                }`}
             >
-              <Bot size={18} />
+              <Bot size={16} />
               AI & Features
             </button>
             <button
                onClick={() => setActiveTab('dashboard')}
-               className={`flex flex-1 items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-colors ${
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
                  activeTab === 'dashboard'
                    ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                }`}
             >
-              <Copy size={18} />
+              <Copy size={16} />
               Web Dashboard
+            </button>
+            <button
+               onClick={() => setActiveTab('installer')}
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
+                 activeTab === 'installer'
+                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+               }`}
+            >
+              <Terminal size={16} />
+              Auto Installer
+            </button>
+            <button
+               onClick={() => setActiveTab('egg')}
+               className={`flex flex-1 min-w-[120px] items-center justify-center gap-2 py-3 px-2 text-xs sm:text-sm font-medium transition-colors ${
+                 activeTab === 'egg'
+                   ? 'border-b-2 border-indigo-600 text-indigo-600 bg-indigo-50/50'
+                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+               }`}
+            >
+              <Server size={16} />
+              Ptero Egg
             </button>
           </div>
 
@@ -816,7 +840,9 @@ export default function App() {
                {activeTab === 'management' ? 'ETALEMC_Management.ts' : 
                 activeTab === 'economy' ? 'ETALEMC_Economy.ts' : 
                 activeTab === 'features' ? 'ETALEMC_Features.ts' :
-                'server.ts'}
+                activeTab === 'dashboard' ? 'server.ts' :
+                activeTab === 'installer' ? 'install.sh' :
+                'egg.json'}
              </span>
              <button
                onClick={copyToClipboard}
@@ -827,21 +853,19 @@ export default function App() {
              </button>
           </div>
           
-          <div className="p-4 bg-gray-900 overflow-auto max-h-[600px]">
-             <pre className="text-sm font-mono leading-relaxed text-gray-100">
+          <div className="p-4 bg-gray-900 overflow-auto max-h-[600px] w-full">
+             <pre className="text-sm font-mono leading-relaxed text-gray-100 whitespace-pre-wrap word-break">
                <code>{activeCode}</code>
              </pre>
           </div>
         </section>
         
         <section className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">Next Steps & Install</h2>
+          <h2 className="text-xl font-semibold">Next Steps & Deployment</h2>
           <ul className="list-disc list-inside text-gray-700 space-y-2">
-            <li>Ensure you have <code>discord.js</code>, <code>axios</code>, <code>sqlite3</code>, <code>sqlite</code>, <code>@google/genai</code>, and <code>express</code> installed.</li>
-            <li>In your terminal: <code>npm install discord.js axios sqlite3 sqlite @google/genai express</code></li>
-            <li>For the Economy module, the database automatically initializes as <code>economy.db</code> in the root folder of the workspace.</li>
-            <li>For the Features module, ensure you supply a valid <strong>GEMINI_API_KEY</strong>, <strong>AI_CHANNEL_ID</strong>, and <strong>REVIEW_LOG_CHANNEL_ID</strong>.</li>
-            <li>For the Dashboard Web Server, save the code as <code>server.ts</code> and execute with <code>npx tsx server.ts</code>. Ensure you open the specified PORT.</li>
+            <li><strong>Auto-Installer:</strong> Save the script as <code>install.sh</code>, make it executable (<code>chmod +x install.sh</code>), and run it (<code>./install.sh</code>). It will fetch the repo and prompt for variables.</li>
+            <li><strong>Pterodactyl Egg:</strong> Import the <code>egg.json</code> into your Pterodactyl admin panel, which sets up the needed environment factors and Node.js 18.</li>
+            <li>For the Discord features, ensure you have <code>discord.js axios sqlite3 sqlite @google/genai express</code> installed if installing manually.</li>
           </ul>
         </section>
       </div>
