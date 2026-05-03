@@ -1,0 +1,6 @@
+{
+  "name": "ETALEMC Discord Bot Config",
+  "description": "Discord.js bot code utilizing the Pterodactyl API for ETALEMC HOSTING.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
